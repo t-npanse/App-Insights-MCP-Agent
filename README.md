@@ -2,7 +2,7 @@
 Codebase of my internship project demo - AI agent for troubleshooting App Insights resource and workbook creation
 
 
-1. Extract chat_interface.zip -
+1. Extract chat_interface.zip - https://microsoft.sharepoint.com/:f:/t/AzureMonitoring-v-TeamSync/EvVNv7jtvfpMuqyzQgZzbfgBOqf91dCswVPMcSofkyS4wg?e=INq8gg
 	1. .md files are instructions for the LLM
 	2. .html is the chatbot frontend
 	3. server.js is the backend file

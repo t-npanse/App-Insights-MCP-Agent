@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>App Insights MCP demo</title>
+    <style>
+        body {
+            background: #f3f6fb;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .portal-header {
+            background: #0078d4;
+            color: white;
+            padding: 24px 0 16px 32px;
+            font-size: 2em;
+            font-weight: 500;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .chat-container {
+            max-width: 1000px;
+            min-height: 700px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,120,212,0.08);
+            padding: 32px 24px 24px 24px;
+        }
+        .messages {
+            min-height: 600px;
+            max-height: 800px;
+            overflow-y: auto;
+            margin-bottom: 24px;
+        }
+        .message {
+            margin-bottom: 18px;
+            display: flex;
+        }
+        .message.user .bubble {
+            margin-left: auto;
+            background: #0078d4;
+            color: white;
+        }
+        .message.bot .bubble {
+            margin-right: auto;
+            background: #f3f6fb;
+            color: #222;
+            border: 1px solid #e1e4e8;
+        }
+        .message.llm .bubble {
+            margin-right: auto;
+            background: transparent;
+            color: #222;
+            border: none;
+            position: relative;
+        }
+        .llm-json-window {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f8fa;
+            border: 1px solid #ffe6b3;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0 0 0;
+            font-size: 0.97em;
+            color: #222;
+            box-shadow: 0 2px 8px rgba(255,200,0,0.04);
+        }
+        .llm-tag {
+            display: inline-block;
+            background: #fff6e6;
+            color: #d35400;
+            font-size: 0.95em;
+            font-weight: bold;
+            border-radius: 6px;
+            border: 1px solid #ffb366;
+            padding: 2px 8px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .bubble {
+            padding: 14px 20px;
+            border-radius: 18px;
+            max-width: 70%;
+            font-size: 1em;
+            line-height: 1.5;
+            box-shadow: 0 2px 8px rgba(0,120,212,0.04);
+        }
+        .bubble.step {
+            font-style: normal;
+            color: #222;
+            background: #f8f8fa;
+        }
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #cfd8e3;
+            font-size: 1em;
+        }
+        .send-btn {
+            background: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0 24px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .send-btn:disabled {
+            background: #b3c6e4;
+            cursor: not-allowed;
+        }
+        .loading {
+            text-align: center;
+            color: #0078d4;
+            margin-top: 10px;
+            display: none;
+        }
+        .agent-tag {
+            display: inline-block;
+            background: #e1e4e8;
+            color: #8000b3;
+            font-size: 0.85em;
+            font-weight: bold;
+            border-radius: 6px;
+            border: 1px solid #a259d9;
+            padding: 2px 8px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .mcp-tag {
+            display: inline-block;
+            background: #d1f7ff;
+            color: #007a8c;
+            font-size: 0.85em;
+            font-weight: bold;
+            border-radius: 6px;
+            padding: 2px 8px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .mcp-output-window {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8fcff;
+            border: 1px solid #b3e6f7;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            font-size: 0.97em;
+            color: #222;
+            box-shadow: 0 2px 8px rgba(0,120,212,0.04);
+        }
+    </style>
+</head>
+<body>
+    <div class="portal-header">
+        App Insights MCP demo
+    </div>
+    <div class="chat-container">
+        <div class="messages" id="messages"></div>
+        <form class="input-row" id="chatForm">
+            <input type="text" id="chatInput" class="chat-input" placeholder="Ask about your Application Insights resource..." autocomplete="off" required>
+            <button type="submit" class="send-btn" id="sendBtn">Send</button>
+        </form>
+    </div>
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function addMessage(sender, text, isStep = false) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ' + sender;
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble' + (isStep ? ' step' : '');
+
+            // Only tag Agent for backend steps, LLM for reasoning
+            if (sender === 'agent') {
+                bubble.innerHTML = `<span class="agent-tag">Agent</span> ` + text.replace(/\n/g, '<br>');
+            } else if (sender === 'llm') {
+                bubble.innerHTML = `<span class="llm-tag">LLM</span> ` + text.replace(/\n/g, '<br>');
+            } else {
+                bubble.innerHTML = text.replace(/\n/g, '<br>');
+            }
+
+            msgDiv.appendChild(bubble);
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // WebSocket for live troubleshooting steps
+        let ws;
+        // Add a global flag to track investigation completion
+        window._investigationComplete = false;
+        function startWebSocket() {
+            if (ws) {
+                ws.close();
+            }
+            ws = new WebSocket(`ws://${window.location.host}`);
+            ws.onopen = function() {
+                // Connection established
+            };
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'info') {
+                        addMessage('bot', data.message);
+                    } else if (data.type === 'step') {
+                        addMessage('agent', data.message, true);
+                    } else if (data.type === 'result') {
+                        addMessage('agent', data.message);
+                        window._investigationComplete = true;
+                    } else if (data.type === 'llm') {
+                        // Never show LLM message after investigation is complete
+                        if (!window._investigationComplete) {
+                            addMessage('llm', data.message);
+                        }
+                    }
+                } catch (e) {
+                    addMessage('bot', event.data);
+                }
+            };
+            ws.onerror = function() {
+                addMessage('bot', "WebSocket error.");
+            };
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userMsg = chatInput.value.trim();
+            if (!userMsg) return;
+            addMessage('user', userMsg);
+            chatInput.value = '';
+            sendBtn.disabled = true;
+
+            startWebSocket();
+
+            ws.onopen = function() {
+                ws.send(JSON.stringify({ type: 'chat', message: userMsg }));
+            };
+
+            ws.onclose = function() {
+                sendBtn.disabled = false;
+            };
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'step') {
+                        addMessage('agent', data.message, true);
+                    } else if (data.type === 'result') {
+                        // Only show the agent message for final result, never the LLM message
+                        if (!window._lastFinalResult || window._lastFinalResult !== data.message) {
+                            addMessage('agent', data.message);
+                            window._lastFinalResult = data.message;
+                            window._investigationComplete = true;
+                        }
+                        // Show MCP/LLM call counts if present
+                        if (typeof data.mcp_calls !== "undefined" && typeof data.llm_calls !== "undefined") {
+                            addMessage('agent', `<span style="font-style:italic;">Total MCP calls: ${data.mcp_calls} &nbsp; Total LLM API calls: ${data.llm_calls}</span>`);
+                        }
+                        sendBtn.disabled = false; // Re-enable send button after troubleshooting ends
+                    } else if (data.type === 'llm') {
+                        // Never show LLM message after investigation is complete (final result shown)
+                        if (!window._investigationComplete) {
+                            addMessage('llm', data.message);
+                        }
+                    } else if (data.type === 'mcp') {
+                        addMessage('mcp', `<div class="mcp-output-window"><strong>MCP Output</strong><br>${data.message}</div>`);
+                    } else if (data.type === 'workbook') {
+                        addMessage('bot', `<div class="mcp-output-window"><strong>Workbook Deployment</strong><br>${data.message}</div>`);
+                    } else if (data.type === 'agent' && data.message && data.message.includes('Workbook deployed successfully!')) {
+                        // Show workbook URL as a clickable link in the chat
+                        addMessage('agent', data.message);
+                    }
+                } catch (e) {
+                    addMessage('bot', event.data);
+                }
+            };
+        });
+
+        // Welcome message
+        addMessage('agent', "👋 Welcome to the App Insights Agent! Ask me about your Application Insights resource, troubleshooting, or SRE issues.");
+    </script>
+</body>
+</html>

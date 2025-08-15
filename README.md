@@ -1,14 +1,16 @@
 # App-Insights-MCP-Agent
 Codebase of my internship project demo - AI agent for troubleshooting App Insights resource and workbook creation
 
+1. md files are instructions for the LLM
+2. .html is the chatbot frontend
+3. server.js is the backend file
 
-1. Extract chat_interface.zip - https://microsoft.sharepoint.com/:f:/t/AzureMonitoring-v-TeamSync/EvVNv7jtvfpMuqyzQgZzbfgBOqf91dCswVPMcSofkyS4wg?e=INq8gg
-	1. .md files are instructions for the LLM
-	2. .html is the chatbot frontend
-	3. server.js is the backend file
-2. Extract both MCP server files (one for troubleshooting and other for workbooks tools) - you will need the paths to "azmcp.exe" , which runs the MCP server on your machine
-3. Command to run chatbot - "server.js"
-4. You should see it here - http://localhost:3000/copilot_chat.html
+Extract both MCP server files (one for troubleshooting and other for workbooks tools) - https://microsoft.sharepoint.com/:f:/t/AzureMonitoring-v-TeamSync/EvVNv7jtvfpMuqyzQgZzbfgBOqf91dCswVPMcSofkyS4wg?e=INq8gg
+You will need the paths to "azmcp.exe" , which runs the MCP server on your machine
+
+Command to run chatbot in your terminal- "server.js"
+
+You should see it here - http://localhost:3000/copilot_chat.html
 
 
 Backend process -
